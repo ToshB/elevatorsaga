@@ -57,33 +57,35 @@
             });
             elevator.on('passing_floor', function(floorNum, direction){
                 // When passing a floor and have room, we might want to pick up passengers
-                function hasRoom(){
-                    return elevator.loadFactor() < 0.5;
-                }
-                function isBottomFreebie(){
-                    return floorNum === 1 && direction === 'down' && floors[floorNum].buttonStates.down === 'activated';
-                }
-                function isTopFreebie(){
-                    return floorNum === floors.length-2 && direction === 'up' && floors[floorNum].buttonStates.up === 'activated';
-                }
-                if(hasRoom() && (isBottomFreebie() || isTopFreebie())){
-                    elevator.destinationQueue.unshift(floorNum);
-                    elevator.checkDestinationQueue();
-                }
+                // function hasRoom(){
+                //     return elevator.loadFactor() < 0.5;
+                // }
+                // function isBottomFreebie(){
+                //     return floorNum === 1 && direction === 'down' && floors[floorNum].buttonStates.down === 'activated';
+                // }
+                // function isTopFreebie(){
+                //     return floorNum === floors.length-2 && direction === 'up' && floors[floorNum].buttonStates.up === 'activated';
+                // }
+                // if(hasRoom() && (isBottomFreebie() || isTopFreebie())){
+                //     elevator.destinationQueue.unshift(floorNum);
+                //     elevator.checkDestinationQueue();
+                // }
             });
 
             elevator.on("floor_button_pressed", function(floorNum){
                 var currentFloor = elevator.currentFloor(),
-                queue = elevator.destinationQueue;
-                var movingUp = currentFloor < floorNum;
+                queue = elevator.destinationQueue,
+                movingUp = currentFloor < floorNum;
+
                 if(!~elevator.destinationQueue.indexOf(floorNum)){
                     elevator.destinationQueue.push(floorNum);
                     elevator.destinationQueue.sort(function(a,b){
                         return movingUp ? a > b : a < b;
                     });
+                    elevator.checkDestinationQueue();
                 }
+
                 setIndicators(movingUp ? 'up' : 'down');
-                elevator.checkDestinationQueue();
             });
 
             elevator.on("idle", function() {
