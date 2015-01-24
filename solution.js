@@ -9,29 +9,31 @@
                     direction = request.slice(1,5);
                     return floors[floorNum].buttonStates[direction] === 'activated';
                 }
+
                 function handleRequest(request){
                     var currentFloor = elevator.currentFloor();
                     var floorNum = parseInt(request[0], 10),
                     direction = request.slice(1,5);
                     elevator.destinationQueue.push(floorNum);
                     elevator.checkDestinationQueue();
-                    console.log('done', floors[currentFloor].buttonStates[direction]);
+                    return floors[currentFloor].buttonStates[direction] !== 'activated';
                 }
 
-                // if(!floorRequests.length){
-                //     elevator.goToFloor(Math.floor(Math.random(0,floors.length)*floors.length));
-                // }
-                (function getRequest(){
-                    var request = floorRequests.shift();
-                    if(request && isCurrentRequest(request)){
-                        handleRequest(request)
+                var request = floorRequests[0];
+                if(!request){
+                    setTimeout(checkRequests, 100);
+                    return;
+                }
 
-                    }else if(floorRequests.length){
-                        getRequest();
-                    }else{
-                        setTimeout(getRequest, 100);
-                    }
-                }())
+                if(!isCurrentRequest(request)){
+                    floorRequests.shift();
+                    setTimeout(checkRequests, 0);
+                    return;
+                }
+
+                if(handleRequest(request)){
+                    floorRequests.shift();
+                }
             }
 
             function setIndicators(direction){
@@ -74,7 +76,7 @@
                 var currentFloor = elevator.currentFloor(),
                 queue = elevator.destinationQueue;
                 var movingUp = currentFloor < floorNum;
-                if(!elevator.destinationQueue.some(function(f){return f === floorNum;})){
+                if(!~elevator.destinationQueue.indexOf(floorNum)){
                     elevator.destinationQueue.push(floorNum);
                     elevator.destinationQueue.sort(function(a,b){
                         return movingUp ? a > b : a < b;
