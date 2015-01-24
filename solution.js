@@ -4,28 +4,28 @@
 
         function registerElevatorCallbacks(elevator, elevatorIndex){
             function checkRequests(){
-                console.log('elevator %i checking requests', elevatorIndex, floorRequests);
                 function isCurrentRequest(request){
                     var floorNum = parseInt(request[0], 10),
                     direction = request.slice(1,5);
                     return floors[floorNum].buttonStates[direction] === 'activated';
                 }
                 function handleRequest(request){
+                    var currentFloor = elevator.currentFloor();
                     var floorNum = parseInt(request[0], 10),
                     direction = request.slice(1,5);
-                    console.log('elevator %i moving to floor %i', elevatorIndex, floorNum);
                     elevator.destinationQueue.push(floorNum);
-
-                    // placeholder
-                    elevator.destinationQueue.push(direction);
                     elevator.checkDestinationQueue();
+                    console.log('done', floors[currentFloor].buttonStates[direction]);
                 }
 
-
+                // if(!floorRequests.length){
+                //     elevator.goToFloor(Math.floor(Math.random(0,floors.length)*floors.length));
+                // }
                 (function getRequest(){
                     var request = floorRequests.shift();
                     if(request && isCurrentRequest(request)){
-                        handleRequest(request);
+                        handleRequest(request)
+
                     }else if(floorRequests.length){
                         getRequest();
                     }else{
@@ -34,54 +34,37 @@
                 }())
             }
 
-            function indicateUp(){
-                elevator.goingUpIndicator(true);
-                elevator.goingDownIndicator(false);
-            }
-            function indicateDown(){
-                elevator.goingUpIndicator(false);
-                elevator.goingDownIndicator(true);
-            }
-            function indicateOff(){
-                elevator.goingUpIndicator(false);
-                elevator.goingDownIndicator(false);
+            function setIndicators(direction){
+                elevator.goingUpIndicator(direction === 'up');
+                elevator.goingDownIndicator(direction === 'down');
             }
 
             elevator.on('stopped_at_floor', function (floorNum){
                 var queue = elevator.destinationQueue,
                 floor = floors[floorNum];
-                console.log('elevator %i arrived on floor %i, queue: ', elevatorIndex, floorNum, queue);
-                if(/up|down/.test(queue[0])){
-                    if(floor.buttonStates.up !== 'activated' && floor.buttonStates.down !== 'activated'){
-                        indicateOff();
-                        queue.shift();
-                    }else if(queue[0] === 'up'){
-                        indicateUp();
-                    }else if(queue[0] === 'down'){
-                        indicateDown();
-                    }
-                }
 
                 if(!queue.length){
                     if(floor.buttonStates.up === 'activated'){
-                        indicateUp();
+                        setIndicators('up');
                     }else if(floor.buttonStates.down === 'activated'){
-                        indicateDown();
+                        setIndicators('down');
                     }else{
-                        indicateOff();
+                        setIndicators();
                     }
                 }
-
             });
             elevator.on('passing_floor', function(floorNum, direction){
+                // When passing a floor and have room, we might want to pick up passengers
+                function hasRoom(){
+                    return elevator.loadFactor() < 0.5;
+                }
                 function isBottomFreebie(){
                     return floorNum === 1 && direction === 'down' && floors[floorNum].buttonStates.down === 'activated';
                 }
                 function isTopFreebie(){
                     return floorNum === floors.length-2 && direction === 'up' && floors[floorNum].buttonStates.up === 'activated';
                 }
-                if(isBottomFreebie() || isTopFreebie()){
-                    console.log('freebie!');
+                if(hasRoom() && (isBottomFreebie() || isTopFreebie())){
                     elevator.destinationQueue.unshift(floorNum);
                     elevator.checkDestinationQueue();
                 }
@@ -90,9 +73,6 @@
             elevator.on("floor_button_pressed", function(floorNum){
                 var currentFloor = elevator.currentFloor(),
                 queue = elevator.destinationQueue;
-                if(/up|down/.test(queue[0])){
-                    queue.shift();
-                }
                 var movingUp = currentFloor < floorNum;
                 if(!elevator.destinationQueue.some(function(f){return f === floorNum;})){
                     elevator.destinationQueue.push(floorNum);
@@ -100,15 +80,11 @@
                         return movingUp ? a > b : a < b;
                     });
                 }
-                elevator.goingUpIndicator(movingUp);
-                elevator.goingDownIndicator(!movingUp);
-
-                console.log('requesting elevator %i move', elevatorIndex, movingUp ? 'up' : 'down', 'to', floorNum, queue);
+                setIndicators(movingUp ? 'up' : 'down');
                 elevator.checkDestinationQueue();
             });
 
             elevator.on("idle", function() {
-                console.log('elevator %i idle', elevatorIndex);
                 checkRequests(elevator);
             });
 
@@ -128,7 +104,6 @@
             var request = floorNum+desiredDirection;
             if(!requestExists(request) && !isBeingServed()){
                 floorRequests.push(floorNum + desiredDirection);
-                console.log('requested service:', floorRequests);
             }
         }
         function registerFloorButtons(floor){
