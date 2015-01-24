@@ -55,21 +55,8 @@
                     }
                 }
             });
+
             elevator.on('passing_floor', function(floorNum, direction){
-                // When passing a floor and have room, we might want to pick up passengers
-                // function hasRoom(){
-                //     return elevator.loadFactor() < 0.5;
-                // }
-                // function isBottomFreebie(){
-                //     return floorNum === 1 && direction === 'down' && floors[floorNum].buttonStates.down === 'activated';
-                // }
-                // function isTopFreebie(){
-                //     return floorNum === floors.length-2 && direction === 'up' && floors[floorNum].buttonStates.up === 'activated';
-                // }
-                // if(hasRoom() && (isBottomFreebie() || isTopFreebie())){
-                //     elevator.destinationQueue.unshift(floorNum);
-                //     elevator.checkDestinationQueue();
-                // }
             });
 
             elevator.on("floor_button_pressed", function(floorNum){
@@ -107,7 +94,7 @@
 
             var request = floorNum+desiredDirection;
             if(!requestExists(request) && !isBeingServed()){
-                floorRequests.push(floorNum + desiredDirection);
+                floorRequests.push(request);
             }
         }
         function registerFloorButtons(floor){
